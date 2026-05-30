@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GFH — Improvement Plan Monitoring</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy: #1F3864; --navy-light: #2a4a7f; --blue-mid: #2E75B6;
+    --blue-pale: #E6F1FB; --blue-text: #0C447C;
+    --green-bg: #EAF3DE; --green-text: #27500A; --green-border: #97C459;
+    --amber-bg: #FAEEDA; --amber-text: #633806; --amber-border: #EF9F27;
+    --red-bg: #FCEBEB; --red-text: #791F1F; --red-border: #F09595; --red-strong: #A32D2D;
+    --surface: #f7f8fa; --card-bg: #ffffff;
+    --border: rgba(0,0,0,0.1); --border-mid: rgba(0,0,0,0.15);
+    --text-primary: #1a1a2e; --text-secondary: #555566; --text-hint: #8888aa;
+    --radius: 10px; --radius-sm: 6px;
+  }
+  body { font-family: 'DM Sans', sans-serif; background: var(--surface); color: var(--text-primary); min-height: 100vh; font-size: 14px; line-height: 1.6; }
+  .page-header { background: var(--navy); position: relative; overflow: hidden; }
+  .page-header::after { content: ''; position: absolute; right: -60px; top: -60px; width: 300px; height: 300px; border-radius: 50%; background: rgba(255,255,255,0.04); pointer-events: none; }
+  .header-inner { max-width: 780px; margin: 0 auto; padding: 28px 24px 24px; position: relative; z-index: 1; }
+  .school-tag { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #7aaee0; margin-bottom: 6px; }
+  .header-title { font-family: 'DM Serif Display', serif; font-size: 26px; color: #fff; margin-bottom: 6px; line-height: 1.2; }
+  .header-sub { font-size: 13px; color: #9bbde0; }
+  .nav-tabs { background: #162a4a; display: flex; max-width: 780px; margin: 0 auto; padding: 0 24px; }
+  .nav-tab { padding: 13px 20px; font-size: 13px; font-weight: 500; color: #7aaee0; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.18s; display: flex; align-items: center; gap: 7px; }
+  .nav-tab:hover { color: #c8dff5; }
+  .nav-tab.active { color: #fff; border-bottom-color: #5da3e8; }
+  .main { max-width: 780px; margin: 0 auto; padding: 28px 24px 60px; }
+  .view { display: none; }
+  .view.active { display: block; }
+  .section-label { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-hint); margin: 28px 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  .section-label:first-child { margin-top: 0; }
+  .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; margin-bottom: 10px; }
+  .field-label { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 5px; display: block; }
+  .req { color: #c0392b; margin-left: 2px; }
+  .field-hint { font-size: 12px; color: var(--text-secondary); margin-bottom: 9px; line-height: 1.5; }
+  input[type="text"], input[type="number"], select, textarea { width: 100%; font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--text-primary); background: var(--surface); border: 1px solid var(--border-mid); border-radius: var(--radius-sm); padding: 9px 12px; outline: none; transition: border-color 0.15s, box-shadow 0.15s; -webkit-appearance: none; }
+  input:focus, select:focus, textarea:focus { border-color: var(--blue-mid); box-shadow: 0 0 0 3px rgba(46,117,182,0.12); background: #fff; }
+  textarea { min-height: 80px; resize: vertical; line-height: 1.55; }
+  select { cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 30px; }
+  .rag-group { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-top: 4px; }
+  .rag-btn { border: 2px solid var(--border-mid); border-radius: var(--radius-sm); padding: 10px 6px; text-align: center; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; background: var(--surface); color: var(--text-secondary); user-select: none; }
+  .rag-btn:hover { border-color: #aaa; }
+  .rag-btn.R.sel { background: var(--red-bg); color: var(--red-text); border-color: var(--red-strong); }
+  .rag-btn.A.sel { background: var(--amber-bg); color: var(--amber-text); border-color: #c07d10; }
+  .rag-btn.G.sel { background: var(--green-bg); color: var(--green-text); border-color: #4a8c1c; }
+  .conditional { display: none; margin-top: 10px; padding: 14px 16px; border-radius: var(--radius-sm); border-left: 3px solid var(--red-strong); background: var(--red-bg); }
+  .conditional .field-label { color: var(--red-text); }
+  .priority-grid { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+  .priority-row { display: flex; align-items: center; gap: 10px; }
+  .priority-num { width: 24px; height: 24px; border-radius: 50%; background: var(--navy); color: #fff; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .btn-primary { width: 100%; padding: 13px; background: var(--navy); color: #fff; border: none; border-radius: var(--radius); font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 16px; transition: background 0.15s; letter-spacing: 0.01em; }
+  .btn-primary:hover { background: var(--navy-light); }
+  .btn-primary:disabled { background: #aaa; cursor: not-allowed; }
+  .btn-secondary { width: 100%; padding: 12px; background: transparent; color: var(--navy); border: 1.5px solid var(--navy); border-radius: var(--radius); font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+  .btn-secondary:hover { background: var(--blue-pale); }
+  .error-box { display: none; background: var(--red-bg); border: 1px solid var(--red-border); border-radius: var(--radius-sm); padding: 12px 16px; font-size: 13px; color: var(--red-text); margin-bottom: 12px; line-height: 1.6; }
+  .success-screen { text-align: center; padding: 40px 20px; }
+  .success-icon { width: 64px; height: 64px; border-radius: 50%; background: var(--green-bg); border: 2px solid var(--green-border); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 28px; color: var(--green-text); }
+  .success-title { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--navy); margin-bottom: 6px; }
+  .success-sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 28px; }
+  .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-width: 400px; margin: 0 auto; }
+  .metrics-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 4px; }
+  .metric-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; text-align: center; }
+  .metric-val { font-family: 'DM Serif Display', serif; font-size: 32px; color: var(--navy); line-height: 1; }
+  .metric-val.green { color: var(--green-text); }
+  .metric-val.red { color: var(--red-text); }
+  .metric-val.amber { color: var(--amber-text); }
+  .metric-lbl { font-size: 11px; color: var(--text-secondary); margin-top: 5px; font-weight: 500; }
+  .strand-row { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); gap: 10px; }
+  .strand-row:last-child { border-bottom: none; }
+  .strand-name { flex: 1; font-size: 13px; color: var(--text-primary); min-width: 0; }
+  .strand-who { font-size: 11px; color: var(--text-hint); white-space: nowrap; }
+  .rag-pill { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
+  .rag-pill.G { background: var(--green-bg); color: var(--green-text); }
+  .rag-pill.A { background: var(--amber-bg); color: var(--amber-text); }
+  .rag-pill.R { background: var(--red-bg); color: var(--red-text); }
+  .rag-pill.none { background: #f0f0f0; color: #999; }
+  .concern-card { border-left: 3px solid var(--red-strong); background: var(--red-bg); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding: 12px 16px; margin-bottom: 8px; }
+  .concern-card.amber { border-left-color: #c07d10; background: var(--amber-bg); }
+  .concern-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; gap: 10px; }
+  .concern-strand { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  .concern-meta { font-size: 11px; color: var(--text-hint); white-space: nowrap; }
+  .concern-text { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+  .submission-row { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); gap: 10px; }
+  .submission-row:last-child { border-bottom: none; }
+  .sub-info { flex: 1; min-width: 0; }
+  .sub-strand { font-size: 13px; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sub-meta { font-size: 11px; color: var(--text-hint); margin-top: 2px; }
+  .empty { text-align: center; color: var(--text-hint); font-size: 13px; padding: 32px 0; }
+  .export-btn { display: inline-flex; align-items: center; gap: 7px; padding: 9px 16px; background: var(--card-bg); border: 1px solid var(--border-mid); border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; color: var(--navy); cursor: pointer; transition: background 0.15s; }
+  .export-btn:hover { background: var(--blue-pale); }
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 8px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-overlay { text-align: center; padding: 48px 20px; color: var(--text-secondary); font-size: 13px; }
+  .loading-spinner-lg { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--navy); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 14px; }
+  .dash-cycle-filter { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+  .refresh-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; background: var(--card-bg); border: 1px solid var(--border-mid); border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; color: var(--navy); cursor: pointer; }
+  .refresh-btn:hover { background: var(--blue-pale); }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="header-inner">
+    <div class="school-tag">GEMS Founders — Nad Al Hamar</div>
+    <div class="header-title">Improvement Plan Monitoring</div>
+    <div class="header-sub">Complete one return per strand each reporting cycle &nbsp;·&nbsp; All responses saved centrally</div>
+  </div>
+  <div class="nav-tabs">
+    <div class="nav-tab active" id="tab-form" onclick="showTab('form')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      Submit return
+    </div>
+    <div class="nav-tab" id="tab-dash" onclick="showTab('dash')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Executive Team dashboard
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- FORM VIEW -->
+  <div class="view active" id="view-form">
+    <div id="form-body">
+
+      <p class="section-label">About this return</p>
+
+      <div class="card">
+        <label class="field-label">Your full name <span class="req">*</span></label>
+        <input type="text" id="f-name" placeholder="e.g. Sarah Al-Hassan">
+      </div>
+
+      <div class="card" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div>
+          <label class="field-label">Reporting cycle <span class="req">*</span></label>
+          <select id="f-ht">
+            <option value="">Select...</option>
+            <option>October</option>
+            <option>December</option>
+            <option>February</option>
+            <option>April</option>
+            <option>May</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label">Academic year <span class="req">*</span></label>
+          <select id="f-year">
+            <option>2026–2027</option>
+            <option>2027–2028</option>
+            <option>2028–2029</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card">
+        <label class="field-label">Improvement strand <span class="req">*</span></label>
+        <div class="field-hint">Each strand owner submits one return per reporting cycle.</div>
+        <select id="f-strand" onchange="updateStrandQ()">
+          <option value="">Select strand...</option>
+          <option>GEMS Curriculum Impact (Academic Outcomes)</option>
+          <option>GEMS Curriculum Intent</option>
+          <option>GEMS Curriculum Implementation (Teach Like a GEM)</option>
+          <option>Culture of Excellence / Safeguarding</option>
+          <option>National Agenda</option>
+          <option>Leavers to competitor schools</option>
+          <option>Parent surveys / NPS</option>
+          <option>People recruitment and retention</option>
+          <option>Leadership and Management</option>
+          <option>Enrolments</option>
+          <option>Finance</option>
+          <option>SEND and Inclusion</option>
+          <option>Enrichment and Co-curricular</option>
+        </select>
+      </div>
+
+      <p class="section-label">RAG rating</p>
+
+      <div class="card">
+        <label class="field-label">Current RAG rating for this strand <span class="req">*</span></label>
+        <div class="field-hint">Green = benchmark met or exceeded &nbsp;·&nbsp; Amber = progress but not yet on track &nbsp;·&nbsp; Red = significant concern requiring urgent action</div>
+        <div class="rag-group">
+          <div class="rag-btn R" onclick="selRag(this,'R')">&#9679; Red — concern</div>
+          <div class="rag-btn A" onclick="selRag(this,'A')">&#9679; Amber — developing</div>
+          <div class="rag-btn G" onclick="selRag(this,'G')">&#9679; Green — on track</div>
+        </div>
+        <div class="conditional" id="red-detail">
+          <label class="field-label">Specific concern and urgent action being taken <span class="req">*</span></label>
+          <textarea id="f-red" placeholder="Describe the concern clearly and state what immediate actions are underway..."></textarea>
+        </div>
+      </div>
+
+      <p class="section-label">Evidence of impact</p>
+
+      <div class="card">
+        <label class="field-label">What evidence do you have of impact this reporting cycle? <span class="req">*</span></label>
+        <div class="field-hint">Reference specific data, observations, work scrutiny or feedback. Be concrete — not "we did X" but "X resulted in Y."</div>
+        <textarea id="f-evidence" placeholder="e.g. Lesson drop-in data (12 visits) shows 82% of lessons demonstrating TLAG questioning strategies. CAT4 baselines collected for all Y1–Y8 students (100% completion)..."></textarea>
+      </div>
+
+      <div class="card">
+        <label class="field-label">Actions completed this reporting cycle <span class="req">*</span></label>
+        <div class="field-hint">List each completed action — one per line.</div>
+        <textarea id="f-complete" placeholder="Baseline CAT4 data collected for all Year 1–8 students&#10;Curriculum maps for FS1–Y4 finalised and shared with teachers&#10;Weekly Practice Clinics established and running..."></textarea>
+      </div>
+
+      <div class="card">
+        <label class="field-label">Actions still in progress or not yet started</label>
+        <textarea id="f-inprog" placeholder="GL Progress Tests — scheduled for December Week 3&#10;Y5–Y8 curriculum maps — in draft, due end of December..."></textarea>
+      </div>
+
+      <div id="strand-specific"></div>
+
+      <p class="section-label">Next steps</p>
+
+      <div class="card">
+        <label class="field-label">Top 3 priorities for next reporting cycle <span class="req">*</span></label>
+        <div class="field-hint">These become your commitments for the next review.</div>
+        <div class="priority-grid">
+          <div class="priority-row"><div class="priority-num">1</div><input type="text" id="p1" placeholder="First priority"></div>
+          <div class="priority-row"><div class="priority-num">2</div><input type="text" id="p2" placeholder="Second priority"></div>
+          <div class="priority-row"><div class="priority-num">3</div><input type="text" id="p3" placeholder="Third priority"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <label class="field-label">Support needed from SLT?</label>
+        <div class="field-hint">Leave blank if none. Otherwise describe what support, resources or decisions are required.</div>
+        <textarea id="f-support" placeholder="e.g. Request SLT agreement on intervention groupings for below-expected-progress pupils in Y3 and Y4..."></textarea>
+      </div>
+
+      <div class="card">
+        <label class="field-label">Early warning signs or risks for the Executive Team</label>
+        <textarea id="f-risks" placeholder="e.g. Parent concern volume increasing around communication in FS2. Three parents have separately raised this..."></textarea>
+      </div>
+
+      <div class="error-box" id="err-box"></div>
+      <button class="btn-primary" id="submit-btn" onclick="submitForm()">Submit monitoring return &rarr;</button>
+
+    </div>
+
+    <div id="success-screen" style="display:none;" class="success-screen">
+      <div class="success-icon">&#10003;</div>
+      <div class="success-title">Return submitted</div>
+      <div class="success-sub" id="success-sub">Your response has been saved to the central dashboard.</div>
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="resetForm()">Submit another return</button>
+        <button class="btn-primary" style="margin-top:0;" onclick="showTab('dash')">View dashboard</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD VIEW -->
+  <div class="view" id="view-dash">
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+      <div>
+        <div style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--navy);">Executive Team dashboard</div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">Live — responses from all devices</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="refresh-btn" onclick="loadDash()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+          Refresh
+        </button>
+        <button class="export-btn" onclick="exportCSV()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export CSV
+        </button>
+      </div>
+    </div>
+
+    <div id="dash-content">
+      <div class="loading-overlay">
+        <div class="loading-spinner-lg"></div>
+        Loading responses...
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxsv8_wUQYOt-R5btclK2B7YyARVXDa0PV-1YNxmRmd4kY66rukPtqXeU9JkTE7SgDn_w/exec';
+var RAG = '';
+var allData = [];
+
+var STRANDS = [
+  'GEMS Curriculum Impact (Academic Outcomes)',
+  'GEMS Curriculum Intent',
+  'GEMS Curriculum Implementation (Teach Like a GEM)',
+  'Culture of Excellence / Safeguarding',
+  'National Agenda',
+  'Leavers to competitor schools',
+  'Parent surveys / NPS',
+  'People recruitment and retention',
+  'Leadership and Management',
+  'Enrolments',
+  'Finance',
+  'SEND and Inclusion',
+  'Enrichment and Co-curricular'
+];
+
+function showTab(t) {
+  document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('active'); });
+  document.getElementById('view-'+t).classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(function(b){ b.classList.remove('active'); });
+  document.getElementById('tab-'+t).classList.add('active');
+  if(t==='dash') loadDash();
+}
+
+function selRag(el, v) {
+  RAG = v;
+  document.querySelectorAll('.rag-btn').forEach(function(b){ b.classList.remove('sel'); });
+  el.classList.add('sel');
+  document.getElementById('red-detail').style.display = v==='R' ? 'block' : 'none';
+}
+
+function updateStrandQ() {
+  var strand = document.getElementById('f-strand').value;
+  var el = document.getElementById('strand-specific');
+  if(!strand){ el.innerHTML=''; return; }
+  var h = '<p class="section-label">Strand data</p>';
+  if(strand.includes('Enrolment')) {
+    h += '<div class="card"><label class="field-label">Current total headcount</label><input type="number" id="sd1" placeholder="Total pupils currently enrolled"><label class="field-label" style="margin-top:12px;">Enquiries this reporting cycle</label><input type="number" id="sd2" placeholder="Number of new enquiries received"><label class="field-label" style="margin-top:12px;">Withdrawals this reporting cycle</label><input type="number" id="sd3" placeholder="Number of pupils withdrawn"><label class="field-label" style="margin-top:12px;">Conversions (enquiry to enrolment)</label><input type="number" id="sd4" placeholder="Number who converted to enrolment"></div>';
+  } else if(strand.includes('NPS') || strand.includes('Parent surveys')) {
+    h += '<div class="card"><label class="field-label">Current NPS score (target: 30+)</label><input type="number" id="sd1" placeholder="Enter current NPS score"><label class="field-label" style="margin-top:12px;">Number of parent concerns logged this reporting cycle</label><input type="number" id="sd2" placeholder="Number"><label class="field-label" style="margin-top:12px;">Top theme from parent feedback</label><input type="text" id="sd3" placeholder="e.g. Communication, Transition, Homework..."></div>';
+  } else if(strand.includes('Finance')) {
+    h += '<div class="card"><label class="field-label">Budget status this reporting cycle</label><select id="sd1"><option value="">Select...</option><option>On track — within budget</option><option>Minor variance — within tolerance</option><option>Significant variance — action required</option></select><label class="field-label" style="margin-top:12px;">Main area of budget pressure (if any)</label><input type="text" id="sd2" placeholder="e.g. Staffing, Resources, Facilities..."></div>';
+  } else if(strand.includes('People')) {
+    h += '<div class="card"><label class="field-label">Staff departures this reporting cycle</label><select id="sd1"><option value="">Select...</option><option>None</option><option>Yes — planned</option><option>Yes — unplanned</option></select><label class="field-label" style="margin-top:12px;">Staff retention risk level</label><select id="sd2"><option value="">Select...</option><option>No concerns</option><option>1–2 staff at risk of leaving</option><option>3 or more staff at risk</option></select></div>';
+  } else if(strand.includes('SEND')) {
+    h += '<div class="card"><label class="field-label">Number of pupils on the inclusion register</label><input type="number" id="sd1" placeholder="Number"><label class="field-label" style="margin-top:12px;">Number of IEPs / SEND passports active and reviewed this cycle</label><input type="number" id="sd2" placeholder="Number"><label class="field-label" style="margin-top:12px;">Any SEND compliance concerns?</label><select id="sd3"><option value="">Select...</option><option>No concerns</option><option>Minor — being addressed</option><option>Significant — escalation required</option></select></div>';
+  } else if(strand.includes('Curriculum Impact')) {
+    h += '<div class="card"><label class="field-label">% of lesson observations meeting TLAG standards</label><input type="number" id="sd1" placeholder="e.g. 82"><label class="field-label" style="margin-top:12px;">Number of pupils identified for targeted intervention</label><input type="number" id="sd2" placeholder="Number"><label class="field-label" style="margin-top:12px;">Summary of assessment / progress data</label><textarea id="sd3" placeholder="e.g. CAT4 data shows 14% of cohort working significantly below age-related expectations in reading..."></textarea></div>';
+  } else if(strand.includes('Leadership')) {
+    h += '<div class="card"><label class="field-label">Date ASPRA was last updated</label><input type="text" id="sd1" placeholder="e.g. Week 3, December"><label class="field-label" style="margin-top:12px;">QA activities completed this reporting cycle</label><textarea id="sd2" placeholder="e.g. Work scrutiny across Maths and English, 14 lesson drop-ins, 2 subject deep dives..."></textarea></div>';
+  } else {
+    h += '<div class="card"><label class="field-label">Key data or metrics for this strand</label><textarea id="sd1" placeholder="Enter any key numbers, data points or measurable outcomes for this strand this reporting cycle..."></textarea></div>';
+  }
+  el.innerHTML = h;
+}
+
+function getSD() {
+  var parts = [];
+  ['sd1','sd2','sd3','sd4'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el && el.value) parts.push(id+': '+el.value);
+  });
+  return parts.join(' | ');
+}
+
+function v(id){ return (document.getElementById(id)||{value:''}).value.trim(); }
+
+function submitForm() {
+  var errs = [];
+  if(!v('f-name')) errs.push('Your name is required.');
+  if(!v('f-ht')) errs.push('Please select a reporting cycle.');
+  if(!v('f-strand')) errs.push('Please select your improvement strand.');
+  if(!RAG) errs.push('Please select a RAG rating.');
+  if(RAG==='R' && !v('f-red')) errs.push('Please describe the Red concern and actions being taken.');
+  if(!v('f-evidence')) errs.push('Evidence of impact is required.');
+  if(!v('f-complete')) errs.push('Please list the actions completed this reporting cycle.');
+  if(!v('p1')) errs.push('Please enter at least one priority for next reporting cycle.');
+
+  var eb = document.getElementById('err-box');
+  if(errs.length) {
+    eb.style.display = 'block';
+    eb.innerHTML = '<strong>Please complete the required fields:</strong><br>' + errs.map(function(e){ return '&bull; '+e; }).join('<br>');
+    eb.scrollIntoView({behavior:'smooth', block:'center'});
+    return;
+  }
+  eb.style.display = 'none';
+
+  var btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Saving to dashboard...';
+
+  var payload = {
+    timestamp: new Date().toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}),
+    name: v('f-name'),
+    ht: v('f-ht'),
+    year: v('f-year'),
+    strand: v('f-strand'),
+    rag: RAG==='R'?'Red':RAG==='A'?'Amber':'Green',
+    redDetail: v('f-red'),
+    evidence: v('f-evidence'),
+    complete: v('f-complete'),
+    inprog: v('f-inprog'),
+    p1: v('p1'), p2: v('p2'), p3: v('p3'),
+    support: v('f-support'),
+    risks: v('f-risks'),
+    strandData: getSD()
+  };
+
+  var img = new Image();
+  img.onload = function(){ onSubmitSuccess(payload); };
+  img.onerror = function(){ onSubmitSuccess(payload); };
+  img.src = SCRIPT_URL + '?callback=1&data=' + encodeURIComponent(JSON.stringify(payload));
+
+  setTimeout(function(){
+    fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }).then(function(){ onSubmitSuccess(payload); }).catch(function(){ onSubmitSuccess(payload); });
+  }, 100);
+}
+
+var submitted = false;
+function onSubmitSuccess(payload) {
+  if(submitted) return;
+  submitted = true;
+  document.getElementById('form-body').style.display = 'none';
+  var ss = document.getElementById('success-screen');
+  ss.style.display = 'block';
+  document.getElementById('success-sub').textContent = payload.strand + ' · ' + payload.ht + ' · ' + payload.name + ' — saved to central dashboard.';
+}
+
+function resetForm() {
+  submitted = false;
+  document.getElementById('form-body').style.display = 'block';
+  document.getElementById('success-screen').style.display = 'none';
+  ['f-name','f-evidence','f-complete','f-inprog','p1','p2','p3','f-support','f-risks','f-red'].forEach(function(id){
+    var el = document.getElementById(id); if(el) el.value='';
+  });
+  ['f-ht','f-strand'].forEach(function(id){
+    var el = document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('red-detail').style.display = 'none';
+  document.getElementById('strand-specific').innerHTML = '';
+  document.querySelectorAll('.rag-btn').forEach(function(b){ b.classList.remove('sel'); });
+  RAG = '';
+  var btn = document.getElementById('submit-btn');
+  btn.disabled = false;
+  btn.innerHTML = 'Submit monitoring return &rarr;';
+}
+
+function loadDash() {
+  document.getElementById('dash-content').innerHTML = '<div class="loading-overlay"><div class="loading-spinner-lg"></div>Loading responses from all devices...</div>';
+  var s = document.createElement('script');
+  s.src = SCRIPT_URL + '?callback=handleData&t=' + Date.now();
+  s.onerror = function(){ loadDashFetch(); };
+  document.head.appendChild(s);
+  setTimeout(function(){ if(!allData.length) loadDashFetch(); }, 4000);
+}
+
+function handleData(response) {
+  if(response && response.data) {
+    allData = response.data;
+    renderDash();
+  }
+}
+
+function loadDashFetch() {
+  fetch(SCRIPT_URL)
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(d && d.data){ allData = d.data; renderDash(); }
+      else { showDashError(); }
+    })
+    .catch(function(){ showDashError(); });
+}
+
+function showDashError() {
+  document.getElementById('dash-content').innerHTML = '<div class="card"><div class="empty"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin:0 auto 10px;display:block;opacity:0.4;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Could not load responses. Check your internet connection and try refreshing.<br><br><button class="btn-secondary" style="max-width:200px;margin:0 auto;" onclick="loadDash()">Try again</button></div></div>';
+}
+
+function renderDash() {
+  var cycleFilter = '';
+  var filterEl = document.getElementById('d-cycle-filter');
+  if(filterEl) cycleFilter = filterEl.value;
+
+  var rows = allData.slice(1);
+  var filtered = cycleFilter && cycleFilter !== 'all'
+    ? rows.filter(function(r){ return r[2]===cycleFilter; })
+    : rows;
+
+  var total = filtered.length;
+  var greens = filtered.filter(function(r){ return r[5]==='Green'; }).length;
+  var ambers = filtered.filter(function(r){ return r[5]==='Amber'; }).length;
+  var reds = filtered.filter(function(r){ return r[5]==='Red'; }).length;
+
+  var latest = {};
+  filtered.forEach(function(r){
+    var strand = r[4];
+    if(!latest[strand]) latest[strand] = r;
+  });
+
+  var concerns = filtered.filter(function(r){ return r[5]==='Red' || r[5]==='Amber'; });
+
+  var html = '';
+
+  html += '<div class="metrics-grid">';
+  html += '<div class="metric-card"><div class="metric-val">'+total+'</div><div class="metric-lbl">Total returns</div></div>';
+  html += '<div class="metric-card"><div class="metric-val green">'+greens+'</div><div class="metric-lbl">Green</div></div>';
+  html += '<div class="metric-card"><div class="metric-val amber">'+ambers+'</div><div class="metric-lbl">Amber</div></div>';
+  html += '<div class="metric-card"><div class="metric-val red">'+reds+'</div><div class="metric-lbl">Red</div></div>';
+  html += '</div>';
+
+  html += '<div class="dash-cycle-filter">';
+  html += '<span class="section-label" style="margin:0;padding:0;border:none;">Strand RAG overview</span>';
+  html += '<select id="d-cycle-filter" onchange="renderDash()" style="width:auto;font-size:12px;padding:5px 10px;">';
+  html += '<option value="all">All reporting cycles</option>';
+  ['October','December','February','April','May'].forEach(function(c){
+    html += '<option'+(cycleFilter===c?' selected':'')+'>'+c+'</option>';
+  });
+  html += '</select></div>';
+
+  html += '<div class="card" style="padding:8px 16px;">';
+  STRANDS.forEach(function(st){
+    var e = latest[st];
+    var rag = e ? (e[5]==='Green'?'G':e[5]==='Amber'?'A':'R') : 'none';
+    var label = {G:'Green',A:'Amber',R:'Red',none:'Not submitted'}[rag];
+    var short = st.length > 46 ? st.substr(0,46)+'…' : st;
+    html += '<div class="strand-row"><span class="strand-name">'+short+'</span>';
+    if(e) html += '<span class="strand-who">'+esc(e[1])+' &middot; '+esc(e[2])+'</span>';
+    html += '<span class="rag-pill '+rag+'">'+label+'</span></div>';
+  });
+  html += '</div>';
+
+  html += '<p class="section-label">Red and amber concerns</p>';
+  if(!concerns.length) {
+    html += '<div class="card"><div class="empty">No Red or Amber returns for this period.</div></div>';
+  } else {
+    concerns.slice().reverse().forEach(function(r){
+      var isR = r[5]==='Red';
+      html += '<div class="concern-card'+(isR?'':' amber')+'">';
+      html += '<div class="concern-head"><span class="concern-strand">'+esc(r[4])+'</span><span class="concern-meta">'+esc(r[1])+' &nbsp;&bull;&nbsp; '+esc(r[2])+' &nbsp;&bull;&nbsp; '+esc(r[0])+'</span></div>';
+      if(r[6]) html += '<div class="concern-text"><strong>Concern:</strong> '+esc(r[6])+'</div>';
+      if(r[14]) html += '<div class="concern-text" style="margin-top:5px;"><strong>Risk flagged:</strong> '+esc(r[14])+'</div>';
+      if(r[10]) html += '<div class="concern-text" style="margin-top:5px;"><strong>Next priorities:</strong> '+[r[10],r[11],r[12]].filter(Boolean).map(esc).join(' &middot; ')+'</div>';
+      html += '</div>';
+    });
+  }
+
+  html += '<p class="section-label">All submissions ('+total+')</p>';
+  html += '<div class="card" style="padding:8px 16px;">';
+  if(!filtered.length) {
+    html += '<div class="empty">No submissions yet.</div>';
+  } else {
+    filtered.slice().reverse().forEach(function(r){
+      var rag = r[5]==='Green'?'G':r[5]==='Amber'?'A':'R';
+      html += '<div class="submission-row"><div class="sub-info"><div class="sub-strand">'+esc(r[4])+'</div><div class="sub-meta">'+esc(r[1])+' &nbsp;&bull;&nbsp; '+esc(r[2])+' '+esc(r[3])+' &nbsp;&bull;&nbsp; '+esc(r[0])+'</div></div><span class="rag-pill '+rag+'">'+esc(r[5])+'</span></div>';
+    });
+  }
+  html += '</div>';
+
+  document.getElementById('dash-content').innerHTML = html;
+}
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function exportCSV() {
+  if(!allData.length){ alert('No data to export yet.'); return; }
+  var csv = allData.map(function(r){
+    return r.map(function(c){ return '"'+String(c||'').replace(/"/g,'""')+'"'; }).join(',');
+  }).join('\n');
+  var a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  a.download = 'GFH_Monitoring_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+</script>
+</body>
+</html>
